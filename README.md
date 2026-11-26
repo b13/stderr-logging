@@ -180,7 +180,7 @@ error_log = /dev/stderr
 
 ## Compatibility
 
-TYPO3 v13.4 and v14.3, PHP 8.2 or newer.
+TYPO3 v13.4, v14.3 and v15, PHP 8.2 or newer (PHP 8.5 for TYPO3 v15).
 
 ## Open Issues
 

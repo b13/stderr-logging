@@ -20,6 +20,7 @@ use Psr\Log\LogLevel;
 use TYPO3\CMS\Core\Log\Logger;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Log\Writer\FileWriter;
+use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
@@ -89,7 +90,7 @@ final class StderrLoggingTest extends UnitTestCase
             ],
         ];
         $logManager = new LogManager();
-        GeneralUtility::setSingletonInstance(LogManager::class, $logManager);
+        $this->provideLogManager($logManager);
         $earlyLogger = $logManager->getLogger('Early.Logger');
         self::assertInstanceOf(Logger::class, $earlyLogger);
 
@@ -137,5 +138,20 @@ final class StderrLoggingTest extends UnitTestCase
         StderrLogging::activate();
 
         self::assertSame($configuration, $GLOBALS['TYPO3_CONF_VARS']['LOG']);
+    }
+
+    /**
+     * Makes makeInstance(LogManager::class) in StderrLogging::activate()
+     * return the given instance. TYPO3 v13 and v14 mark the LogManager as
+     * SingletonInterface, which only setSingletonInstance() accepts; since
+     * TYPO3 v15 it is a plain service, which only addInstance() accepts.
+     */
+    private function provideLogManager(LogManager $logManager): void
+    {
+        if ($logManager instanceof SingletonInterface) {
+            GeneralUtility::setSingletonInstance(LogManager::class, $logManager);
+        } else {
+            GeneralUtility::addInstance(LogManager::class, $logManager);
+        }
     }
 }

@@ -17,6 +17,10 @@ jobs:
       matrix:
         php: [ '8.2', '8.5' ]
         TYPO3: [ '13', '14' ]
+        include:
+          # TYPO3 v15 requires PHP 8.5
+          - php: '8.5'
+            TYPO3: '15'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
