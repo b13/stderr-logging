@@ -73,10 +73,11 @@ Options:
             - 8.4: use PHP 8.4
             - 8.5: use PHP 8.5
 
-    -t <13|14>
+    -t <13|14|15>
         Specifies the TYPO3 Core version to be used - Only with -s composerInstall|composerValidate|phpstan
             - 13: Use TYPO3 v13.4
             - 14 (default): Use TYPO3 v14.3
+            - 15: Use TYPO3 v15 (dev-main, needs PHP 8.5)
 
     -x
         Only with -s functional|unit
@@ -168,7 +169,7 @@ while getopts "b:s:t:p:xy:nhu" OPT; do
             ;;
         t)
             TYPO3=${OPTARG}
-            if ! [[ ${TYPO3} =~ ^(13|14)$ ]]; then
+            if ! [[ ${TYPO3} =~ ^(13|14|15)$ ]]; then
                 INVALID_OPTIONS+=("${OPTARG}")
             fi
           ;;
@@ -222,6 +223,10 @@ case ${TYPO3} in
     14)
         CORE_CONSTRAINT="^14.3"
         TESTING_FRAMEWORK_CONSTRAINT="^9.0"
+        ;;
+    15)
+        CORE_CONSTRAINT="^15.0"
+        TESTING_FRAMEWORK_CONSTRAINT="dev-main"
         ;;
 esac
 COMPOSER_INSTALL_COMMAND="composer update --no-progress --no-interaction --with-all-dependencies"

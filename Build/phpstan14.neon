@@ -4,3 +4,10 @@ parameters:
   paths:
     - %currentWorkingDirectory%/Classes
     - %currentWorkingDirectory%/Tests
+
+  ignoreErrors:
+    # The LogManager implements SingletonInterface up to TYPO3 v14 only,
+    # see StderrLoggingTest::provideLogManager()
+    -
+      identifier: instanceof.alwaysTrue
+      path: %currentWorkingDirectory%/Tests/Unit/StderrLoggingTest.php
