@@ -12,11 +12,18 @@ it is gone.
 
 This extension is built for exactly these setups. Install it, and
 everything TYPO3 would write to `var/log/` goes to stderr instead, one JSON
-object per line. There is nothing to configure.
+object per line.
+
+## Installation
 
 ```bash
 composer require b13/stderr-logging
 ```
+
+That's it. The extension is activated by default: as soon as it is
+installed, TYPO3 logs to stderr. You do not need to touch
+`$GLOBALS['TYPO3_CONF_VARS']['LOG']`, the extension configuration or the
+site configuration.
 
 ## What it does
 
@@ -61,16 +68,64 @@ properties, so no request, user or service object spills its contents into
 the log. `\Stringable`, `\JsonSerializable`, dates and enums are logged as
 their value.
 
-## Environment variables (optional)
+## Configuration
+
+It's activated by default, there is nothing you have to configure. The
+log levels stay the ones TYPO3 and your extensions already define in
+`$GLOBALS['TYPO3_CONF_VARS']['LOG']` (TYPO3's default: `warning` and up).
+
+Everything below is optional.
+
+### Environment variables
 
 | Variable                      | Example | Effect                                                    |
 |-------------------------------|---------|-----------------------------------------------------------|
-| `TYPO3_STDERR_LOGGING`        | `0`     | switches the extension off, TYPO3 writes files again     |
+| `TYPO3_STDERR_LOGGING`        | `0`     | switches the extension off, TYPO3 writes files again      |
 | `TYPO3_STDERR_LOGGING_LEVEL`  | `debug` | one minimum level for all output, instead of TYPO3's      |
 
+`TYPO3_STDERR_LOGGING` accepts `0`, `false`, `off` and `no` to switch the
+extension off; any other value, or no value at all, keeps it active.
 `TYPO3_STDERR_LOGGING=0` is handy for local development, where you might
 prefer the files. `TYPO3_STDERR_LOGGING_LEVEL=debug` on a single pod helps
 when hunting a problem.
+
+In Kubernetes, set them in the container spec of your deployment:
+
+```yaml
+env:
+  - name: TYPO3_STDERR_LOGGING_LEVEL
+    value: "notice"
+```
+
+### Cover the install tool and early bootstrap
+
+The install tool does not load extensions and keeps writing to
+`var/log/`. To cover it too, add this line to
+`config/system/additional.php`, which the install tool reads:
+
+```php
+\B13\StderrLogging\StderrLogging::configure();
+```
+
+TYPO3 reads `additional.php` before it creates the first logger, so with
+this line no file writer is created at all, not even during bootstrap. The
+extension itself keeps working as before; using both does no harm.
+
+### Use the writer in your own log configuration
+
+To send a component to stderr with its own level, use the writer like any
+other TYPO3 log writer:
+
+```php
+$GLOBALS['TYPO3_CONF_VARS']['LOG']['B13']['MyExtension']['writerConfiguration'] = [
+    \Psr\Log\LogLevel::INFO => [
+        \B13\StderrLogging\Log\Writer\StderrWriter::class => [],
+    ],
+];
+```
+
+The writer takes one option, `stream`, e.g. `php://stdout` instead of the
+default `php://stderr`.
 
 ## Make sure stderr reaches the container log
 
@@ -112,21 +167,10 @@ error_log = /dev/stderr
 
 ## Good to know
 
-- **The install tool** does not load extensions and keeps writing to
-  `var/log/`. To cover it too, add this line to
-  `config/system/additional.php`, which the install tool reads:
-
-  ```php
-  \B13\StderrLogging\StderrLogging::configure();
-  ```
-
-  TYPO3 reads `additional.php` before it creates the first logger, so with
-  this line no file writer is created at all, not even during bootstrap.
-  The extension itself keeps working as before; using both does no harm.
 - **Files created during bootstrap.** A `FileWriter` opens its file when it
   is created, so `var/log/typo3_<hash>.log` may still appear, empty, from
   loggers created before the extension was loaded. Nothing is written to
-  it. The `additional.php` line above prevents that, too.
+  it. The `additional.php` line (see Configuration) prevents that.
 - **On the command line** log records appear in the terminal, as they go to
   stderr. Use `TYPO3_STDERR_LOGGING=0` for a run where you do not want that.
 - **Configuration you add later** in `ext_localconf.php` of an extension
@@ -140,7 +184,7 @@ TYPO3 v13.4 and v14.3, PHP 8.2 or newer.
 
 ## Open Issues
 
-If you find an issue, feel free to create an issue on GitHub or a pull request.
+If you find an issue, feel free to create an [issue on GitHub](https://github.com/b13/stderr-logging/issues) or a [pull request](https://github.com/b13/stderr-logging/pulls).
 
 ### Credits
 
